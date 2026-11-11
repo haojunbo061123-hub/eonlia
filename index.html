@@ -11,9 +11,9 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f8f4ec" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
-<link rel="icon" href="apple-touch-icon.png?v=2">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="icon" href="apple-touch-icon.png?v=3">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Spectral:wght@300;400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
 <style>
   /* 浅色：米色信纸；深色：烛光 */
   :root{
@@ -40,9 +40,10 @@
   }
   body{
     display:flex;align-items:center;justify-content:center;
-    /* 上下留白对称（取灵动岛和底部横条中较大的一个），内容才会真正居中 */
-    --safe-y:max(env(safe-area-inset-top), env(safe-area-inset-bottom));
-    padding:calc(var(--safe-y) + 28px) 28px;
+    /* 在"状态栏以下、底部横条以上"的可用区域里居中（iOS 标准做法） */
+    --safe-t:env(safe-area-inset-top); --safe-b:env(safe-area-inset-bottom);
+    --safe-l:env(safe-area-inset-left); --safe-r:env(safe-area-inset-right);
+    padding:calc(var(--safe-t) + 28px) 28px calc(var(--safe-b) + 28px);
     font-family:"Cormorant Garamond","Noto Serif SC",serif;
     -webkit-font-smoothing:antialiased;
   }
@@ -64,23 +65,8 @@
   #dust{position:fixed;inset:0;pointer-events:none;z-index:0;animation:fadeIn 3s ease 1s both}
   @keyframes fadeIn{from{opacity:0}}
 
-  /* 信纸边框：只有左右两侧的双细线，两端各一个小菱形，上下对称 */
-  .frame{
-    position:fixed;pointer-events:none;z-index:0;
-    top:calc(var(--safe-y) + 14px);bottom:calc(var(--safe-y) + 14px);
-    left:calc(env(safe-area-inset-left) + 14px);right:calc(env(safe-area-inset-right) + 14px);
-    border-left:1px solid var(--gold);border-right:1px solid var(--gold);opacity:.32;
-    animation:frameIn 2.2s cubic-bezier(.6,0,.2,1) both;
-  }
-  /* 开场：竖线从中间向上下长出来 */
-  @keyframes frameIn{from{clip-path:inset(50% 0 50% 0)}to{clip-path:inset(-10px)}}
-  .frame::after{content:"";position:absolute;inset:0 5px;border-left:1px solid var(--gold);border-right:1px solid var(--gold);opacity:.5}
-  .frame i{position:absolute;width:7px;height:7px;background:var(--accent);transform:rotate(45deg)}
-  .frame i:nth-child(1){top:-4px;left:-4px} .frame i:nth-child(2){top:-4px;right:-4px}
-  .frame i:nth-child(3){bottom:-4px;left:-4px} .frame i:nth-child(4){bottom:-4px;right:-4px}
-
   /* ---------- 内容 ---------- */
-  /* 内容在屏幕正中（按 iPhone 17 Pro 截图实测校准，不再额外下移） */
+  /* 在可用区域居中（见 placeContent） */
   .wrap{width:100%;max-width:400px;text-align:center;position:relative;z-index:1}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--gold)}
   .rule i{display:block;height:1px;width:90px;background:var(--gold);opacity:.8;animation:draw 1.5s cubic-bezier(.5,0,.2,1) .5s both}
@@ -107,8 +93,10 @@
 
   .since{font-size:15px;letter-spacing:.32em;color:var(--soft);font-style:italic;margin-top:14px}
   .days{
-    font-family:"Cormorant Garamond",serif;font-weight:400;
-    font-size:clamp(96px,32vw,150px);line-height:.95;margin:34px 0 0;
+    /* 数字统一用 Spectral：数字站在同一条底线上，不会像 Cormorant 那样 9 往下坠 */
+    font-family:"Spectral",serif;font-weight:300;
+    /* 大数字比原来下移 15pt（上方间距 34→49）；下面两段间距各让出一半，时钟及以下位置不变 */
+    font-size:clamp(96px,32vw,150px);line-height:.95;margin:49px 0 0;
     font-variant-numeric:lining-nums;
   }
   /* 金箔流光：每隔十几秒，一道淡金色的光从左到右扫过大数字 */
@@ -123,10 +111,10 @@
   }
   /* 每 7 秒一次，每次约 2.8 秒扫过 */
   @keyframes sweep{0%{background-position:100% 0}40%,100%{background-position:0 0}}
-  .days-label{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--soft);letter-spacing:.5em;margin:8px 0 30px;padding-left:.5em}
-  .clock{display:flex;justify-content:center;align-items:flex-start;margin-top:30px}
+  .days-label{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--soft);letter-spacing:.5em;margin:8px 0 23px;padding-left:.5em}
+  .clock{display:flex;justify-content:center;align-items:flex-start;margin-top:22px}
   .unit{width:min(92px,24vw)}
-  .unit .n{font-size:40px;font-weight:500;font-variant-numeric:tabular-nums lining-nums}
+  .unit .n{font-family:"Spectral",serif;font-size:40px;font-weight:300;font-variant-numeric:tabular-nums lining-nums}
   .unit .l{font-family:"Noto Serif SC",serif;font-size:11px;color:var(--soft);letter-spacing:.3em;margin-top:2px;padding-left:.3em}
   .sep{font-size:30px;color:var(--gold);padding-top:6px;opacity:.7}
   /* 数字更新：只有变化的那一位快速交叉淡变，位置不动 */
@@ -137,13 +125,13 @@
   @keyframes dIn{from{opacity:0}to{opacity:1}}
   @keyframes dOut{from{opacity:1}to{opacity:0}}
   .total{margin-top:36px;font-size:15px;color:var(--soft);line-height:2;font-style:italic}
-  .total span{font-style:normal;color:var(--ink);font-variant-numeric:lining-nums}
+  .total span{font-family:"Spectral",serif;font-weight:400;font-size:14px;font-style:normal;color:var(--ink);font-variant-numeric:lining-nums}
   .total .zh{font-family:"Noto Serif SC",serif;font-style:normal;font-size:12px;letter-spacing:.15em}
 
   /* ---------- 里程碑 ---------- */
   .next{margin-top:22px;font-family:"Noto Serif SC",serif;font-size:12px;letter-spacing:.15em;color:var(--soft)}
   .next em{font-style:normal;color:var(--gold)}
-  .next .num{font-family:"Cormorant Garamond",serif;font-size:15px;letter-spacing:.05em;color:var(--ink);font-variant-numeric:lining-nums}
+  .next .num{font-family:"Spectral",serif;font-size:14px;letter-spacing:.05em;color:var(--ink);font-variant-numeric:lining-nums}
   .bar{width:120px;height:1px;margin:12px auto 0;background:var(--line);position:relative;overflow:visible}
   .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--gold);width:0;transition:width 1s ease}
   .bar i::after{content:"";position:absolute;right:-2px;top:-2px;width:5px;height:5px;background:var(--gold);transform:rotate(45deg)}
@@ -163,20 +151,16 @@
   .fest .ft{display:block;font-family:"Noto Serif SC",serif;font-size:13px;letter-spacing:.45em;padding-left:.45em;color:var(--accent)}
   .fest .fs{display:block;font-style:italic;font-size:14px;letter-spacing:.2em;color:var(--soft);margin-top:2px}
   body[data-fest] .fest{display:block}
-  body[data-fest] .days{margin-top:22px}
+  body[data-fest] .days{margin-top:37px}
 
   /* 菱形换成别的形状（爱心 / 星星）时用的通用动画：不旋转 */
   @keyframes popS{from{opacity:0;transform:scale(.3)}to{opacity:.75;transform:scale(.95)}}
   @keyframes beat{0%,100%{opacity:.75;transform:scale(.95)} 12%{opacity:1;transform:scale(1.18)} 24%{transform:scale(1)} 36%{opacity:1;transform:scale(1.12)}}
   @keyframes twinkle{0%,100%{opacity:.7;transform:scale(.9) rotate(0)} 50%{opacity:1;transform:scale(1.15) rotate(45deg)}}
-  .shape .rule b, .shape .frame i{
+  .shape .rule b{
     -webkit-mask:var(--shape) center/contain no-repeat;mask:var(--shape) center/contain no-repeat;
-    transform:none;
+    transform:none;width:13px;height:12px;
   }
-  .shape .rule b{width:13px;height:12px}
-  .shape .frame i{width:10px;height:10px;top:auto;left:auto;right:auto;bottom:auto}
-  .shape .frame i:nth-child(1){top:-5px;left:-5px} .shape .frame i:nth-child(2){top:-5px;right:-5px}
-  .shape .frame i:nth-child(3){bottom:-5px;left:-5px} .shape .frame i:nth-child(4){bottom:-5px;right:-5px}
 
   /* 情人节 / 520 / 七夕：玫瑰色烛光，菱形变成心跳的爱心 */
   [data-fest=love]{
@@ -211,9 +195,11 @@
   [data-fest=month] .rule b{animation-duration:.8s, 2.4s}
 
   /* 预览某一天时底部一行小字，轻点回到今天 */
-  .preview-tag{position:fixed;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-y) + 18px);
-    display:none;padding:10px 18px;
-    font-size:11px;letter-spacing:.3em;color:var(--soft);font-family:"Noto Serif SC",serif;white-space:nowrap;cursor:pointer}
+  /* 放在屏幕顶部（状态栏下面），离底部的"纪念日历"很远，不会点错；点按区域也加大了 */
+  .preview-tag{position:fixed;z-index:3;left:50%;transform:translateX(-50%);top:calc(var(--safe-t) + 6px);
+    display:none;padding:16px 36px;
+    font-size:12px;letter-spacing:.3em;color:var(--soft);font-family:"Noto Serif SC",serif;white-space:nowrap;cursor:pointer}
+  .preview-tag:active{opacity:.5}
   .preview-tag em{font-style:normal;color:var(--accent)}
   body.previewing .preview-tag{display:block}
 
@@ -266,7 +252,7 @@
     border-bottom:1px solid var(--line);cursor:pointer}
   .row:last-child{border-bottom:0}
   .row:active{opacity:.6}
-  .row .dt{font-size:24px;line-height:1;font-variant-numeric:lining-nums;text-align:center}
+  .row .dt{font-family:"Spectral",serif;font-weight:300;font-size:22px;line-height:1;font-variant-numeric:lining-nums;text-align:center}
   .row .wk{display:block;font-family:"Noto Serif SC",serif;font-size:10px;letter-spacing:.2em;color:var(--soft);margin-top:4px;padding-left:.2em}
   .mk{width:8px;height:8px;justify-self:center;background:var(--c);transform:rotate(45deg)}
   .mk.big{width:10px;height:10px;box-shadow:0 0 8px var(--c)}
@@ -277,7 +263,7 @@
   .row .nm small{display:block;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:13px;letter-spacing:.06em;color:var(--soft);margin-top:1px}
   .row.minor .nm{color:var(--soft)}
   .row .lf{text-align:right;font-family:"Noto Serif SC",serif;font-size:11px;letter-spacing:.1em;color:var(--soft);white-space:nowrap}
-  .row .lf b{font-family:"Cormorant Garamond",serif;font-weight:500;font-size:19px;color:var(--ink);letter-spacing:0;margin:0 2px}
+  .row .lf b{font-family:"Spectral",serif;font-weight:400;font-size:17px;color:var(--ink);letter-spacing:0;margin:0 2px}
   .row.today .lf{color:var(--gold);letter-spacing:.3em}
   .sheet-foot{flex:none;text-align:center;font-family:"Noto Serif SC",serif;font-size:10px;letter-spacing:.2em;color:var(--soft);opacity:.75;padding-top:10px}
 
@@ -289,7 +275,6 @@
 <body>
 <div class="glow"></div>
 <canvas id="dust"></canvas>
-<div class="frame"><i></i><i></i><i></i><i></i></div>
 
 <div class="wrap">
   <div class="rule"><i></i><b></b><i></i></div>
@@ -387,7 +372,7 @@
   let W = 0, H = 0, motes = [], target = 18, last = 0, dustRGB = "184,149,90";
   function resize(){
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    W = innerWidth; H = innerHeight;
+    W = document.body.clientWidth || innerWidth; H = document.body.clientHeight || innerHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     cv.style.width = W + "px"; cv.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -496,6 +481,7 @@
       delete b.dataset.fest; b.classList.remove("shape");
     }
     refreshDustColor();
+    placeContent();   // 节日多一行标题，重新定位
   }
 
   // ---------- 纪念日历：接下来一年里的节日、里程碑、每月纪念 ----------
@@ -544,6 +530,18 @@
     $("list").scrollTop = 0;
   }
   const sheet = $("sheet"), wrapEl = document.querySelector(".wrap");
+
+  // ---------- 整页下移 ----------
+  // 整页不额外下移（只在"状态栏以下、底部横条以上"居中）；大数字自己的下移见 CSS 里的 .days
+  const SHIFT = 0;
+  function placeContent(){
+    const b = document.body, cs = getComputedStyle(b);
+    const pb = parseFloat(cs.paddingBottom), H = b.clientHeight;
+    wrapEl.style.top = "0px";
+    const wr = wrapEl.getBoundingClientRect();
+    const shift = Math.min(SHIFT, (H - pb) - wr.bottom);   // 小屏幕时底部的字不能超出可用区域
+    wrapEl.style.top = Math.max(0, Math.round(shift)) + "px";
+  }
   function openSheet(){
     renderCalendar();
     sheet.style.setProperty("--drag", "0px");
@@ -577,15 +575,16 @@
   (() => {
     const head = $("sheetHead");
     let y0 = 0, t0 = 0, dy = 0, active = false;
+    const along = ev => ev.clientY;
     head.addEventListener("pointerdown", ev => {
       if (!document.body.classList.contains("sheet-open")) return;
-      active = true; y0 = ev.clientY; t0 = performance.now(); dy = 0;
+      active = true; y0 = along(ev); t0 = performance.now(); dy = 0;
       sheet.classList.add("dragging");
       head.setPointerCapture(ev.pointerId);
     });
     head.addEventListener("pointermove", ev => {
       if (!active) return;
-      const raw = ev.clientY - y0;
+      const raw = along(ev) - y0;
       dy = raw > 0 ? raw : -Math.sqrt(-raw) * 2;   // 往上拖有阻力
       sheet.style.setProperty("--drag", dy + "px");
     });
@@ -626,6 +625,9 @@
   tick(); setInterval(tick, 1000);
   requestAnimationFrame(frame);
   setTimeout(() => document.body.classList.add("loaded"), 3500);
+  placeContent();
+  addEventListener("resize", placeContent);
+  if (document.fonts) document.fonts.ready.then(placeContent);   // 字体加载完高度会变，再定位一次
 
   // 禁止双指缩放和双击放大（iOS Safari 会忽略 user-scalable=no）；纪念日历的列表仍然可以上下滑
   ["gesturestart","gesturechange","gestureend"].forEach(e =>
