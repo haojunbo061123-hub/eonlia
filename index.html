@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>eonLia</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -21,16 +21,19 @@
   :root.dark{ --bg:#1a1a19; --ink:#ece2cf; --soft:#8f8270; --gold:#b8955a; --line:#3a3128; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg)}
-  html,body{min-height:100%;color:var(--ink);transition:background .6s,color .6s}
+  html,body{color:var(--ink);transition:background .6s,color .6s}
+  /* 固定页面：不滚动、不左右滑、不回弹、不缩放 */
+  html,body{
+    position:fixed;inset:0;width:100%;height:100%;overflow:hidden;
+    overscroll-behavior:none;touch-action:none;
+    -webkit-text-size-adjust:100%;text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;
+  }
   body{
-    display:flex;align-items:center;justify-content:center;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
     padding:calc(env(safe-area-inset-top) + 28px) 28px calc(env(safe-area-inset-bottom) + 28px);
     font-family:"Cormorant Garamond","Noto Serif SC",serif;
     -webkit-font-smoothing:antialiased;
-  }
-  body::before{ /* paper grain */
-    content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   .wrap{width:100%;max-width:400px;text-align:center;position:relative}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--gold)}
@@ -50,7 +53,7 @@
   }
   .days-label{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--soft);letter-spacing:.5em;margin:8px 0 30px;padding-left:.5em}
   .clock{display:flex;justify-content:center;align-items:flex-start;margin-top:30px}
-  .unit{width:92px}
+  .unit{width:min(92px,24vw)}
   .unit .n{font-size:40px;font-weight:500;font-variant-numeric:tabular-nums lining-nums}
   .unit .l{font-family:"Noto Serif SC",serif;font-size:11px;color:var(--soft);letter-spacing:.3em;margin-top:2px;padding-left:.3em}
   .sep{font-size:30px;color:var(--gold);padding-top:6px;opacity:.7}
@@ -106,6 +109,18 @@
     $("nth").textContent = d + 1;
   }
   tick(); setInterval(tick, 1000);
+
+  // 禁止双指缩放和双击放大（iOS Safari 会忽略 user-scalable=no）
+  ["gesturestart","gesturechange","gestureend"].forEach(e =>
+    document.addEventListener(e, ev => ev.preventDefault(), { passive: false }));
+  document.addEventListener("touchmove", ev => ev.preventDefault(), { passive: false });
+  let lastTouch = 0;
+  document.addEventListener("touchend", ev => {
+    const now = Date.now();
+    if (now - lastTouch < 350) ev.preventDefault();
+    lastTouch = now;
+  }, { passive: false });
+  document.addEventListener("dblclick", ev => ev.preventDefault());
 
   // 深浅：#light / #dark 强制，其次是上次手动选择，最后跟随系统
   const root = document.documentElement;
