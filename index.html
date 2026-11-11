@@ -8,17 +8,20 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="eonLia">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" href="apple-touch-icon.png">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#faf9f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon-light.png">
+<link rel="icon" href="apple-touch-icon-light.png">
 <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#faf9f5; --ink:#3a2a1e; --soft:#8c7a66; --gold:#a8834a; --line:#d9cbb4;
   }
+  /* 深浅跟随系统 */
   @media (prefers-color-scheme: dark){
-    :root:not(.light){ --bg:#1a1a19; --ink:#ece2cf; --soft:#8f8270; --gold:#b8955a; --line:#3a3128; }
+    :root{ --bg:#1a1a19; --ink:#ece2cf; --soft:#8f8270; --gold:#b8955a; --line:#3a3128; }
   }
-  :root.dark{ --bg:#1a1a19; --ink:#ece2cf; --soft:#8f8270; --gold:#b8955a; --line:#3a3128; }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg)}
   html,body{color:var(--ink);transition:background .6s,color .6s}
@@ -31,7 +34,9 @@
   }
   body{
     display:flex;align-items:center;justify-content:center;
-    padding:calc(env(safe-area-inset-top) + 28px) 28px calc(env(safe-area-inset-bottom) + 28px);
+    /* 上下留白对称（取刘海和底部横条中较大的一个），内容才会真正居中 */
+    --safe-y:max(env(safe-area-inset-top), env(safe-area-inset-bottom));
+    padding:calc(var(--safe-y) + 28px) 28px;
     font-family:"Cormorant Garamond","Noto Serif SC",serif;
     -webkit-font-smoothing:antialiased;
   }
@@ -60,11 +65,6 @@
   .total{margin-top:38px;font-size:15px;color:var(--soft);line-height:2;font-style:italic}
   .total span{font-style:normal;color:var(--ink);font-variant-numeric:lining-nums}
   .total .zh{font-family:"Noto Serif SC",serif;font-style:normal;font-size:12px;letter-spacing:.15em}
-  .toggle{
-    position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);
-    width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;
-    color:var(--gold);font-size:15px;cursor:pointer;opacity:.7;
-  }
   @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 </style>
 </head>
@@ -91,7 +91,6 @@
     <span class="zh">第</span> <span id="nth">1</span> <span class="zh">天</span>
   </div>
 </div>
-<button class="toggle" id="t" aria-label="切换深浅">◐</button>
 <script>
   // 2026-08-09 04:01:00 日本时间
   const START = Date.UTC(2026, 7, 8, 19, 1, 0);
@@ -121,24 +120,6 @@
     lastTouch = now;
   }, { passive: false });
   document.addEventListener("dblclick", ev => ev.preventDefault());
-
-  // 深浅：#light / #dark 强制，其次是上次手动选择，最后跟随系统
-  const root = document.documentElement;
-  function apply(mode){
-    root.classList.remove("light","dark");
-    if (mode === "light" || mode === "dark") root.classList.add(mode);
-  }
-  function fromHash(){ const h = location.hash.slice(1); return (h === "light" || h === "dark") ? h : null; }
-  let saved = null; try { saved = localStorage.getItem("theme"); } catch(e){}
-  apply(fromHash() || saved);
-  window.addEventListener("hashchange", () => apply(fromHash()));
-  $("t").addEventListener("click", () => {
-    const sysDark = matchMedia("(prefers-color-scheme: dark)").matches;
-    const isDark = root.classList.contains("dark") || (!root.classList.contains("light") && sysDark);
-    const next = isDark ? "light" : "dark";
-    apply(next);
-    try { localStorage.setItem("theme", next); } catch(e){}
-  });
 </script>
 </body>
 </html>
