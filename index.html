@@ -99,7 +99,7 @@
     /* 数字统一用 Spectral：数字站在同一条底线上，不会像 Cormorant 那样 9 往下坠 */
     font-family:"Spectral",serif;font-weight:300;
     /* 上方间距 45px：让"上方金线 → 数字顶部"和"数字底部 → 下方金线"一样远（按 Spectral 实测） */
-    font-size:clamp(96px,32vw,150px);line-height:.95;margin:45px 0 0;
+    font-size:clamp(96px,32vw,150px);line-height:.95;margin:66px 0 0;
     font-variant-numeric:lining-nums;
   }
   /* 金箔流光：每隔十几秒，一道淡金色的光从左到右扫过大数字 */
@@ -114,10 +114,18 @@
   }
   /* 每 7 秒一次，每次约 2.8 秒扫过 */
   @keyframes sweep{0%{background-position:100% 0}40%,100%{background-position:0 0}}
-  .days-label{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--soft);letter-spacing:.5em;margin:8px 0 25px;padding-left:.5em}
-  .clock{display:flex;justify-content:center;align-items:flex-start;margin-top:25px}
-  .unit{width:min(92px,24vw)}
-  .unit .n{font-family:"Spectral",serif;font-size:40px;font-weight:300;font-variant-numeric:tabular-nums lining-nums}
+  /* 大数字两侧的"第""天"：小字，和数字底部对齐 */
+  .days .dw{font-family:"Noto Serif SC",serif;font-size:19px;color:var(--soft);letter-spacing:0;margin:0 .45em;vertical-align:baseline}
+  /* 数字下面：今天的日期 */
+  .days-label{font-family:"Noto Serif SC",serif;font-size:12px;color:var(--soft);letter-spacing:.22em;margin:10px 0 25px;padding-left:.22em}
+  /* 一起走过的时间：周 · 小时 · 分钟 */
+  /* 三栏等宽，栏与栏之间一颗金色小点，数字和标签都在各自栏里居中 */
+  .days-label i{font-style:normal;color:var(--gold);margin:0 .5em;letter-spacing:0}
+  .days-label .md{font-family:"Spectral",serif;font-size:14px;letter-spacing:.06em;color:var(--ink);opacity:.8;font-variant-numeric:lining-nums}
+  /* 只留一个数字：一起走过的小时 */
+  .clock{display:flex;justify-content:center;margin-top:25px}
+  .unit{min-width:0}
+  .unit .n{font-family:"Spectral",serif;font-size:30px;font-weight:300;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
   .unit .l{font-family:"Noto Serif SC",serif;font-size:11px;color:var(--soft);letter-spacing:.3em;margin-top:2px;padding-left:.3em}
   .sep{font-size:30px;color:var(--gold);padding-top:6px;opacity:.7}
   /* 数字更新：只有变化的那一位快速交叉淡变，位置不动 */
@@ -154,7 +162,7 @@
   .fest .ft{display:block;font-family:"Noto Serif SC",serif;font-size:13px;letter-spacing:.45em;padding-left:.45em;color:var(--accent)}
   .fest .fs{display:block;font-style:italic;font-size:14px;letter-spacing:.2em;color:var(--soft);margin-top:2px}
   body[data-fest] .fest{display:block}
-  body[data-fest] .days{margin-top:37px}
+  body[data-fest] .days{margin-top:58px}
 
   /* 菱形换成别的形状（爱心 / 星星）时用的通用动画：不旋转 */
   @keyframes popS{from{opacity:0;transform:scale(.3)}to{opacity:.75;transform:scale(.95)}}
@@ -291,22 +299,15 @@
   <div class="rule"><i></i><b></b><i></i></div>
   <div class="fest"><span class="ft" id="ft"></span><span class="fs" id="fs"></span></div>
 
-  <div class="days"><span id="d">0</span></div>
-  <div class="days-label">天</div>
+  <!-- 第 N 天：按日历算，每天零点换到下一天 -->
+  <div class="days"><small class="dw">第</small><span id="d">1</span><small class="dw">天</small></div>
+  <div class="days-label" id="today">&nbsp;</div>
 
   <div class="rule short"><i></i><b></b><i></i></div>
 
+  <!-- 一起走过的小时数（每小时更新） -->
   <div class="clock">
-    <div class="unit"><div class="n" id="h">00</div><div class="l">时</div></div>
-    <div class="sep">·</div>
-    <div class="unit"><div class="n" id="m">00</div><div class="l">分</div></div>
-    <div class="sep">·</div>
-    <div class="unit"><div class="n" id="s">00</div><div class="l">秒</div></div>
-  </div>
-
-  <div class="total">
-    <span id="th">0</span> <span class="zh">小时</span> &nbsp;·&nbsp; <span id="tm">0</span> <span class="zh">分钟</span><br>
-    <span class="zh">第</span> <span id="nth">1</span> <span class="zh">天</span>
+    <div class="unit"><div class="n" id="th">0</div><div class="l">小时</div></div>
   </div>
 </div>
 
@@ -430,10 +431,12 @@
   const CN = ["", "一", "两", "三", "四", "五", "六", "七", "八", "九", "十"];
   function milestones(){
     const list = [];
-    for (let n = 100; n <= 20000; n += 100) list.push({ t: START + (n - 1) * DAY, name: "第 " + n + " 天" });
-    [520, 1314].forEach(n => list.push({ t: START + (n - 1) * DAY, name: "第 " + n + " 天" }));
+    // 里程碑也按日历零点算：第 N 天就是 2026-08-09 往后数 N-1 天的那天 0 点
+    const dayStart = n => new Date(2026, 7, 9 + n - 1).getTime();
+    for (let n = 100; n <= 20000; n += 100) list.push({ t: dayStart(n), name: "第 " + n + " 天" });
+    [520, 1314].forEach(n => list.push({ t: dayStart(n), name: "第 " + n + " 天" }));
     for (let k = 1; k <= 60; k++) {
-      list.push({ t: Date.UTC(2026 + k, 7, 8, 19, 1, 0), name: (k <= 10 ? CN[k] : k + " ") + "周年" });
+      list.push({ t: new Date(2026 + k, 7, 9).getTime(), name: (k <= 10 ? CN[k] : k + " ") + "周年" });
     }
     return list.sort((a, b) => a.t - b.t);
   }
@@ -615,18 +618,22 @@
   })();
   addEventListener("keydown", ev => { if (ev.key === "Escape") closeSheet(); });
 
+  // 第几天：按手机本地日历算，2026-08-09 当天是第 1 天，每天零点 +1
+  const DAY1 = new Date(2026, 7, 9);
+  function dayNumber(t){
+    const d = new Date(t); d.setHours(0, 0, 0, 0);
+    return Math.round((d - DAY1) / DAY) + 1;
+  }
   function tick(){
     const t = now();
     const sec = Math.max(0, Math.floor((t - START) / 1000));
-    const d = Math.floor(sec / 86400);
-    set($("d"), d);
-    $("d").dataset.v = d;
-    setDigits($("h"), pad(Math.floor(sec % 86400 / 3600)));
-    setDigits($("m"), pad(Math.floor(sec % 3600 / 60)));
-    setDigits($("s"), pad(sec % 60));
-    set($("th"), Math.floor(sec / 3600).toLocaleString());
-    set($("tm"), Math.floor(sec / 60).toLocaleString());
-    set($("nth"), d + 1);
+    const n = Math.max(1, dayNumber(t));
+    set($("d"), n);
+    $("d").dataset.v = n;
+    const dt = new Date(t);
+    // 日期：不写年份，月和日用圆点隔开，保留星期，例如"11 · 12 · 星期四"
+    $("today").innerHTML = '<span class="md">' + pad(dt.getMonth() + 1) + "<i>·</i>" + pad(dt.getDate()) + "</span><i>·</i>星期" + "日一二三四五六"[dt.getDay()];
+    setDigits($("th"), Math.floor(sec / 3600).toLocaleString());
     updateMilestone(t);
     updateFestival(t);
     // 平常 18 颗金粉，节日 30 颗，纪念日当天 46 颗
