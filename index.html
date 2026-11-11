@@ -95,8 +95,8 @@
   .days{
     /* 数字统一用 Spectral：数字站在同一条底线上，不会像 Cormorant 那样 9 往下坠 */
     font-family:"Spectral",serif;font-weight:300;
-    /* 大数字比原来下移 15pt（上方间距 34→49）；下面两段间距各让出一半，时钟及以下位置不变 */
-    font-size:clamp(96px,32vw,150px);line-height:.95;margin:49px 0 0;
+    /* 大数字比原来下移 10pt（上方间距 34→44）；下面两段间距各让出一半，时钟及以下位置不变 */
+    font-size:clamp(96px,32vw,150px);line-height:.95;margin:44px 0 0;
     font-variant-numeric:lining-nums;
   }
   /* 金箔流光：每隔十几秒，一道淡金色的光从左到右扫过大数字 */
@@ -111,8 +111,8 @@
   }
   /* 每 7 秒一次，每次约 2.8 秒扫过 */
   @keyframes sweep{0%{background-position:100% 0}40%,100%{background-position:0 0}}
-  .days-label{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--soft);letter-spacing:.5em;margin:8px 0 23px;padding-left:.5em}
-  .clock{display:flex;justify-content:center;align-items:flex-start;margin-top:22px}
+  .days-label{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--soft);letter-spacing:.5em;margin:8px 0 25px;padding-left:.5em}
+  .clock{display:flex;justify-content:center;align-items:flex-start;margin-top:25px}
   .unit{width:min(92px,24vw)}
   .unit .n{font-family:"Spectral",serif;font-size:40px;font-weight:300;font-variant-numeric:tabular-nums lining-nums}
   .unit .l{font-family:"Noto Serif SC",serif;font-size:11px;color:var(--soft);letter-spacing:.3em;margin-top:2px;padding-left:.3em}
@@ -129,7 +129,7 @@
   .total .zh{font-family:"Noto Serif SC",serif;font-style:normal;font-size:12px;letter-spacing:.15em}
 
   /* ---------- 里程碑 ---------- */
-  .next{margin-top:22px;font-family:"Noto Serif SC",serif;font-size:12px;letter-spacing:.15em;color:var(--soft)}
+  .next{font-family:"Noto Serif SC",serif;font-size:12px;letter-spacing:.15em;color:var(--soft)}
   .next em{font-style:normal;color:var(--gold)}
   .next .num{font-family:"Spectral",serif;font-size:14px;letter-spacing:.05em;color:var(--ink);font-variant-numeric:lining-nums}
   .bar{width:120px;height:1px;margin:12px auto 0;background:var(--line);position:relative;overflow:visible}
@@ -151,7 +151,7 @@
   .fest .ft{display:block;font-family:"Noto Serif SC",serif;font-size:13px;letter-spacing:.45em;padding-left:.45em;color:var(--accent)}
   .fest .fs{display:block;font-style:italic;font-size:14px;letter-spacing:.2em;color:var(--soft);margin-top:2px}
   body[data-fest] .fest{display:block}
-  body[data-fest] .days{margin-top:37px}
+  body[data-fest] .days{margin-top:32px}
 
   /* 菱形换成别的形状（爱心 / 星星）时用的通用动画：不旋转 */
   @keyframes popS{from{opacity:0;transform:scale(.3)}to{opacity:.75;transform:scale(.95)}}
@@ -204,7 +204,10 @@
   body.previewing .preview-tag{display:block}
 
   /* ---------- 纪念日历 ---------- */
-  .next{cursor:pointer;padding:6px 20px 0;margin-left:auto;margin-right:auto;width:max-content;max-width:100%}
+  /* 里程碑这一行固定在屏幕下方（底部横条上面），和中间的主体内容分开 */
+  .next{position:fixed;z-index:2;left:0;right:0;margin:0 auto;bottom:calc(var(--safe-b) + 26px);
+    width:max-content;max-width:100%;padding:12px 24px 6px;text-align:center;cursor:pointer}
+  body.loaded .next{animation:none}   /* 开场动画结束后交给下面的过渡效果 */
   .cal-hint{margin-top:10px;font-size:10px;letter-spacing:.35em;color:var(--soft);opacity:.75}
   .cal-hint::after{content:" ›";letter-spacing:0}
   /* 弹出：用 iOS 原生面板同款的减速曲线；遮罩只做淡入（不做模糊，避免卡顿） */
@@ -224,8 +227,10 @@
     border-radius:16px 16px 0 0;opacity:.3;pointer-events:none}
   .sheet-open .sheet-mask{opacity:1;pointer-events:auto}
   /* 打开时，后面的页面轻轻后退变暗 */
-  .wrap{transition:transform .62s cubic-bezier(.32,.72,0,1), opacity .4s ease, filter .4s ease}
+  .wrap,.next{transition:transform .62s cubic-bezier(.32,.72,0,1), opacity .4s ease, filter .4s ease}
   .sheet-open .wrap{transform:scale(.94);opacity:.5}
+  .sheet-open .next{opacity:0}
+  body.swapping .next{opacity:0;filter:blur(6px)}
   /* 切换到另一天时，内容先柔和地淡出再淡入 */
   .wrap.swap{opacity:0;filter:blur(6px);transform:scale(.985)}
   .sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
@@ -298,12 +303,13 @@
     <span id="th">0</span> <span class="zh">小时</span> &nbsp;·&nbsp; <span id="tm">0</span> <span class="zh">分钟</span><br>
     <span class="zh">第</span> <span id="nth">1</span> <span class="zh">天</span>
   </div>
+</div>
 
-  <div class="next" id="openCal">
-    <div id="nl">&nbsp;</div>
-    <div class="bar"><i id="nb"></i></div>
-    <div class="cal-hint">纪念日历</div>
-  </div>
+<!-- 里程碑 + 纪念日历入口：单独放在屏幕下方 -->
+<div class="next" id="openCal">
+  <div id="nl">&nbsp;</div>
+  <div class="bar"><i id="nb"></i></div>
+  <div class="cal-hint">纪念日历</div>
 </div>
 
 <div class="preview-tag" id="ptag"></div>
@@ -535,12 +541,13 @@
   // 整页不额外下移（只在"状态栏以下、底部横条以上"居中）；大数字自己的下移见 CSS 里的 .days
   const SHIFT = 0;
   function placeContent(){
-    const b = document.body, cs = getComputedStyle(b);
-    const pb = parseFloat(cs.paddingBottom), H = b.clientHeight;
+    const pt = parseFloat(getComputedStyle(document.body).paddingTop);
     wrapEl.style.top = "0px";
-    const wr = wrapEl.getBoundingClientRect();
-    const shift = Math.min(SHIFT, (H - pb) - wr.bottom);   // 小屏幕时底部的字不能超出可用区域
-    wrapEl.style.top = Math.max(0, Math.round(shift)) + "px";
+    const wr = wrapEl.getBoundingClientRect(), nextTop = $("openCal").getBoundingClientRect().top;
+    // 小屏幕时主体内容不能压到下方的里程碑那一行，也不能顶到状态栏
+    let shift = Math.min(SHIFT, nextTop - 16 - wr.bottom);
+    shift = Math.max(shift, pt - wr.top);
+    wrapEl.style.top = Math.round(shift) + "px";
   }
   function openSheet(){
     renderCalendar();
@@ -555,10 +562,12 @@
   let swapTimer = 0;
   function switchDate(str){
     clearTimeout(swapTimer);
-    wrapEl.classList.add("swap");
+    wrapEl.classList.add("swap"); document.body.classList.add("swapping");
     swapTimer = setTimeout(() => {
       previewDate(str);
-      requestAnimationFrame(() => requestAnimationFrame(() => wrapEl.classList.remove("swap")));
+      setTimeout(() => {
+        wrapEl.classList.remove("swap"); document.body.classList.remove("swapping");
+      }, 40);
     }, 380);
   }
   $("openCal").addEventListener("click", openSheet);
