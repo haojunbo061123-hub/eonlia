@@ -24,7 +24,9 @@
   @media (prefers-color-scheme: dark){
     :root{
       --bg:#1a1a19; --ink:#ece2cf; --soft:#8f8270; --gold:#b8955a; --line:#3a3128;
-      --glow:rgba(214,158,84,.16); --vignette:rgba(0,0,0,.5); --glint:rgba(255,224,160,.9);    }
+      /* 深色也有烛光，但很淡（约为最初版本的一半），不闪烁 */
+      --glow:rgba(214,158,84,.08); --vignette:rgba(0,0,0,.18); --glint:rgba(255,224,160,.9);
+    }
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--ink);transition:background .6s,color .6s}
@@ -46,7 +48,7 @@
   }
 
   /* ---------- 背景 ---------- */
-  /* 烛光：极慢地左右漂移；深色时还会轻轻明暗 */
+  /* 背景烛光：极慢地左右漂移；深色比浅色更淡 */
   .glow{
     position:fixed;inset:-8%;pointer-events:none;z-index:0;
     background:
@@ -55,37 +57,31 @@
     animation:drift 28s ease-in-out infinite alternate;
     transition:background 1s;
   }
-  @media (prefers-color-scheme: dark){
-    .glow{animation:drift 28s ease-in-out infinite alternate, flicker 9s ease-in-out infinite}
-  }
   @keyframes drift{
     0%{transform:translate(-3.5%, 1%)} 50%{transform:translate(1%, -1.5%)} 100%{transform:translate(3.5%, .5%)}
-  }
-  @keyframes flicker{
-    0%,100%{opacity:.9} 18%{opacity:1} 33%{opacity:.84} 52%{opacity:.97} 71%{opacity:.88} 86%{opacity:1}
   }
   /* 金粉：缓慢上浮、闪烁；节日时跟着换颜色 */
   #dust{position:fixed;inset:0;pointer-events:none;z-index:0;animation:fadeIn 3s ease 1s both}
   @keyframes fadeIn{from{opacity:0}}
 
-  /* 信纸边框：双细线 + 四角小菱形，上下对称 */
+  /* 信纸边框：只有左右两侧的双细线，两端各一个小菱形，上下对称 */
   .frame{
     position:fixed;pointer-events:none;z-index:0;
     top:calc(var(--safe-y) + 14px);bottom:calc(var(--safe-y) + 14px);
     left:calc(env(safe-area-inset-left) + 14px);right:calc(env(safe-area-inset-right) + 14px);
-    border:1px solid var(--gold);opacity:.32;
+    border-left:1px solid var(--gold);border-right:1px solid var(--gold);opacity:.32;
     animation:frameIn 2.2s cubic-bezier(.6,0,.2,1) both;
   }
-  /* 开场：边框从中线向上下展开 */
+  /* 开场：竖线从中间向上下长出来 */
   @keyframes frameIn{from{clip-path:inset(50% 0 50% 0)}to{clip-path:inset(-10px)}}
-  .frame::after{content:"";position:absolute;inset:5px;border:1px solid var(--gold);opacity:.5}
+  .frame::after{content:"";position:absolute;inset:0 5px;border-left:1px solid var(--gold);border-right:1px solid var(--gold);opacity:.5}
   .frame i{position:absolute;width:7px;height:7px;background:var(--accent);transform:rotate(45deg)}
   .frame i:nth-child(1){top:-4px;left:-4px} .frame i:nth-child(2){top:-4px;right:-4px}
   .frame i:nth-child(3){bottom:-4px;left:-4px} .frame i:nth-child(4){bottom:-4px;right:-4px}
 
   /* ---------- 内容 ---------- */
-  /* 视觉居中：上半部分（大数字）更重，几何居中会显得偏上，所以略往下放 */
-  .wrap{width:100%;max-width:400px;text-align:center;position:relative;z-index:1;margin-top:3vh}
+  /* 内容在屏幕正中（按 iPhone 17 Pro 截图实测校准，不再额外下移） */
+  .wrap{width:100%;max-width:400px;text-align:center;position:relative;z-index:1}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--gold)}
   .rule i{display:block;height:1px;width:90px;background:var(--gold);opacity:.8;animation:draw 1.5s cubic-bezier(.5,0,.2,1) .5s both}
   /* 开场：金线从菱形向两边画出来 */
@@ -105,6 +101,8 @@
   .since,.fest,.days,.days-label,.clock,.total,.next{animation:in 1.4s ease both}
   .since{animation-delay:.9s} .fest{animation-delay:1s} .days{animation-delay:1.1s} .days-label{animation-delay:1.25s}
   .clock{animation-delay:1.45s} .total{animation-delay:1.65s} .next{animation-delay:1.85s}
+  /* 开场之后再切换日期时，节日标题立刻淡入，不用再等开场的延迟 */
+  body.loaded .fest{animation:in .6s ease both}
   @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   .since{font-size:15px;letter-spacing:.32em;color:var(--soft);font-style:italic;margin-top:14px}
@@ -212,10 +210,10 @@
   /* 每月 9 号：菱形呼吸得更快更亮 */
   [data-fest=month] .rule b{animation-duration:.8s, 2.4s}
 
-  /* 预览某一天时底部的小标签，轻点回到今天 */
-  .preview-tag{position:fixed;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-y) + 22px);
-    display:none;padding:6px 14px;border:1px solid var(--line);border-radius:20px;background:var(--bg);
-    font-size:11px;letter-spacing:.15em;color:var(--soft);font-family:"Noto Serif SC",serif;white-space:nowrap;cursor:pointer}
+  /* 预览某一天时底部一行小字，轻点回到今天 */
+  .preview-tag{position:fixed;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-y) + 18px);
+    display:none;padding:10px 18px;
+    font-size:11px;letter-spacing:.3em;color:var(--soft);font-family:"Noto Serif SC",serif;white-space:nowrap;cursor:pointer}
   .preview-tag em{font-style:normal;color:var(--accent)}
   body.previewing .preview-tag{display:block}
 
@@ -223,20 +221,38 @@
   .next{cursor:pointer;padding:6px 20px 0;margin-left:auto;margin-right:auto;width:max-content;max-width:100%}
   .cal-hint{margin-top:10px;font-size:10px;letter-spacing:.35em;color:var(--soft);opacity:.75}
   .cal-hint::after{content:" ›";letter-spacing:0}
-  .sheet-mask{position:fixed;inset:0;z-index:9;background:rgba(20,14,8,.3);
-    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .45s}
+  /* 弹出：用 iOS 原生面板同款的减速曲线；遮罩只做淡入（不做模糊，避免卡顿） */
+  .sheet-mask{position:fixed;inset:0;z-index:9;background:rgba(10,8,6,.42);
+    opacity:0;pointer-events:none;transition:opacity .5s cubic-bezier(.32,.72,0,1)}
   .sheet{
     position:fixed;z-index:10;left:0;right:0;bottom:0;max-height:76%;
     display:flex;flex-direction:column;background:var(--bg);color:var(--ink);
-    border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.2);
-    padding:24px 20px calc(env(safe-area-inset-bottom) + 12px);
-    transform:translateY(105%);transition:transform .55s cubic-bezier(.2,.8,.2,1);
+    border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.22);
+    padding:12px 20px calc(env(safe-area-inset-bottom) + 12px);
+    transform:translateY(calc(100% + 20px));will-change:transform;
+    transition:transform .36s cubic-bezier(.4,0,.8,.6);
   }
+  .sheet-open .sheet{transform:translateY(var(--drag, 0px));transition:transform .62s cubic-bezier(.32,.72,0,1)}
+  .sheet.dragging{transition:none!important}
   .sheet::before{content:"";position:absolute;inset:8px 8px 0;border:1px solid var(--gold);border-bottom:0;
     border-radius:16px 16px 0 0;opacity:.3;pointer-events:none}
   .sheet-open .sheet-mask{opacity:1;pointer-events:auto}
-  .sheet-open .sheet{transform:none}
-  .sheet-head{text-align:center;flex:none}
+  /* 打开时，后面的页面轻轻后退变暗 */
+  .wrap{transition:transform .62s cubic-bezier(.32,.72,0,1), opacity .4s ease, filter .4s ease}
+  .sheet-open .wrap{transform:scale(.94);opacity:.5}
+  /* 切换到另一天时，内容先柔和地淡出再淡入 */
+  .wrap.swap{opacity:0;filter:blur(6px);transform:scale(.985)}
+  .sheet-grip{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px}
+  .sheet-head{text-align:center;flex:none;touch-action:none;cursor:grab}
+  /* 每次打开：金线重新画出来，列表一行行浮上来 */
+  .sheet-open .sheet-head .rule i{animation:draw2 .8s cubic-bezier(.5,0,.2,1) .18s both}
+  .sheet-open .sheet-head .rule b{animation:pop2 .6s ease .1s both}
+  .sheet-open .sheet-head h2,.sheet-open .sheet-head p{animation:rowIn .6s cubic-bezier(.2,.8,.2,1) .15s both}
+  .sheet-open .sheet-list > *{animation:rowIn .55s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i, 14) * 32ms + 140ms)}
+  @keyframes draw2{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes pop2{from{opacity:0;transform:rotate(45deg) scale(.3)}to{opacity:.8;transform:rotate(45deg) scale(1)}}
+  @keyframes rowIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .shape .sheet-open .sheet-head .rule b, .sheet-open.shape .sheet-head .rule b{animation-name:popS}
   .sheet-head .rule i{width:56px}
   .sheet-head h2{font-family:"Noto Serif SC",serif;font-weight:400;font-size:15px;letter-spacing:.55em;padding-left:.55em;color:var(--gold);margin-top:12px}
   .sheet-head p{font-style:italic;font-size:14px;letter-spacing:.2em;color:var(--soft);margin-top:2px}
@@ -309,7 +325,8 @@
 
 <div class="sheet-mask" id="mask"></div>
 <section class="sheet" id="sheet" aria-label="纪念日历">
-  <div class="sheet-head">
+  <div class="sheet-head" id="sheetHead">
+    <div class="sheet-grip"></div>
     <div class="rule"><i></i><b></b><i></i></div>
     <h2>纪念日历</h2>
     <p>the days ahead</p>
@@ -333,7 +350,7 @@
     if (ok) {
       const [y, mo, da] = str.split("-").map(Number);
       OFFSET = new Date(y, mo - 1, da, 12, 0, 0).getTime() - Date.now();
-      $("ptag").innerHTML = "预览 <em>" + str.replace(/-/g, " · ") + "</em> · 轻点回到今天";
+      $("ptag").textContent = "‹ 回到今天";
     } else {
       OFFSET = 0;
     }
@@ -510,13 +527,14 @@
     return items.sort((a, b) => a.date - b.date || (a.kind === "milestone" ? -1 : 1));
   }
   function renderCalendar(){
-    let html = "", group = "";
+    let html = "", group = "", n = 0;
+    const idx = () => ' style="--i:' + Math.min(n++, 14) + '"';
     upcoming().forEach(it => {
       const d = it.date, g = d.getFullYear() + " · " + MON[d.getMonth()] + "月";
-      if (g !== group) { group = g; html += '<div class="month">' + g + "</div>"; }
+      if (g !== group) { group = g; html += '<div class="month"' + idx() + '>' + g + "</div>"; }
       const mk = MARK[it.kind] || MARK.newyear;
       const left = it.i === 0 ? "今天" : '还有<b>' + it.i + "</b>天";
-      html += '<div class="row' + (it.i === 0 ? " today" : "") + (it.kind === "month" ? " minor" : "") + '" data-date="' + ymd(d) + '">'
+      html += '<div class="row' + (it.i === 0 ? " today" : "") + (it.kind === "month" ? " minor" : "") + '" data-date="' + ymd(d) + '"' + idx() + '>'
         + '<div class="dt">' + d.getDate() + '<span class="wk">周' + WK[d.getDay()] + "</span></div>"
         + '<i class="mk ' + mk.cls + '" style="--c:' + mk.c + '"></i>'
         + '<div class="nm">' + it.name + "<small>" + it.sub + "</small></div>"
@@ -525,17 +543,63 @@
     $("list").innerHTML = html;
     $("list").scrollTop = 0;
   }
-  function openSheet(){ renderCalendar(); document.body.classList.add("sheet-open"); }
-  function closeSheet(){ document.body.classList.remove("sheet-open"); }
+  const sheet = $("sheet"), wrapEl = document.querySelector(".wrap");
+  function openSheet(){
+    renderCalendar();
+    sheet.style.setProperty("--drag", "0px");
+    document.body.classList.add("sheet-open");
+  }
+  function closeSheet(){
+    document.body.classList.remove("sheet-open");
+    sheet.style.setProperty("--drag", "0px");
+  }
+  // 切换日期：内容先淡出，换好后再淡入，不会"啪"地跳变
+  let swapTimer = 0;
+  function switchDate(str){
+    clearTimeout(swapTimer);
+    wrapEl.classList.add("swap");
+    swapTimer = setTimeout(() => {
+      previewDate(str);
+      requestAnimationFrame(() => requestAnimationFrame(() => wrapEl.classList.remove("swap")));
+    }, 380);
+  }
   $("openCal").addEventListener("click", openSheet);
   $("mask").addEventListener("click", closeSheet);
   $("list").addEventListener("click", ev => {
     const row = ev.target.closest(".row");
     if (!row) return;
     closeSheet();
-    previewDate(row.dataset.date);
+    switchDate(row.dataset.date);
   });
-  $("ptag").addEventListener("click", () => previewDate(null));
+  $("ptag").addEventListener("click", () => switchDate(null));
+
+  // 按住标题往下拖可以关掉面板，松手时拖得够远或够快就收起，否则弹回
+  (() => {
+    const head = $("sheetHead");
+    let y0 = 0, t0 = 0, dy = 0, active = false;
+    head.addEventListener("pointerdown", ev => {
+      if (!document.body.classList.contains("sheet-open")) return;
+      active = true; y0 = ev.clientY; t0 = performance.now(); dy = 0;
+      sheet.classList.add("dragging");
+      head.setPointerCapture(ev.pointerId);
+    });
+    head.addEventListener("pointermove", ev => {
+      if (!active) return;
+      const raw = ev.clientY - y0;
+      dy = raw > 0 ? raw : -Math.sqrt(-raw) * 2;   // 往上拖有阻力
+      sheet.style.setProperty("--drag", dy + "px");
+    });
+    const end = () => {
+      if (!active) return;
+      active = false;
+      sheet.classList.remove("dragging");
+      const v = dy / Math.max(1, performance.now() - t0);
+      if (dy > 110 || (dy > 20 && v > 0.6)) closeSheet();
+      else sheet.style.setProperty("--drag", "0px");
+    };
+    head.addEventListener("pointerup", end);
+    head.addEventListener("pointercancel", end);
+  })();
   addEventListener("keydown", ev => { if (ev.key === "Escape") closeSheet(); });
 
   function tick(){
@@ -561,6 +625,7 @@
   previewDate(new URLSearchParams(location.search).get("date"));
   tick(); setInterval(tick, 1000);
   requestAnimationFrame(frame);
+  setTimeout(() => document.body.classList.add("loaded"), 3500);
 
   // 禁止双指缩放和双击放大（iOS Safari 会忽略 user-scalable=no）；纪念日历的列表仍然可以上下滑
   ["gesturestart","gesturechange","gestureend"].forEach(e =>
