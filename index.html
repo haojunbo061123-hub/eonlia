@@ -32,7 +32,8 @@
   html,body{background:var(--bg);color:var(--ink);transition:background .6s,color .6s}
   /* 固定页面：不滚动、不左右滑、不回弹、不缩放 */
   html,body{
-    position:fixed;inset:0;width:100%;height:100%;overflow:hidden;
+    /* 高度用脚本量出的真实屏幕高度（--app-h），绕开 iOS 主屏幕模式偶尔把页面算矮一截的问题 */
+    position:fixed;top:0;left:0;right:0;width:100%;height:var(--app-h, 100%);overflow:hidden;
     overscroll-behavior:none;touch-action:none;
     -webkit-text-size-adjust:100%;text-size-adjust:100%;
     -webkit-tap-highlight-color:transparent;
@@ -51,7 +52,7 @@
   /* ---------- 背景 ---------- */
   /* 背景烛光：极慢地左右漂移；深色比浅色更淡 */
   .glow{
-    position:fixed;inset:-8%;pointer-events:none;z-index:0;
+    position:absolute;inset:-8%;pointer-events:none;z-index:0;
     background:
       radial-gradient(55% 37% at 50% 41%, var(--glow), transparent 72%),
       radial-gradient(120% 92% at 50% 48%, transparent 52%, var(--vignette) 100%);
@@ -62,7 +63,7 @@
     0%{transform:translate(-3.5%, 1%)} 50%{transform:translate(1%, -1.5%)} 100%{transform:translate(3.5%, .5%)}
   }
   /* 金粉：缓慢上浮、闪烁；节日时跟着换颜色 */
-  #dust{position:fixed;inset:0;pointer-events:none;z-index:0;animation:fadeIn 3s ease 1s both}
+  #dust{position:absolute;inset:0;pointer-events:none;z-index:0;animation:fadeIn 3s ease 1s both}
   @keyframes fadeIn{from{opacity:0}}
 
   /* ---------- 内容 ---------- */
@@ -196,7 +197,7 @@
 
   /* 预览某一天时底部一行小字，轻点回到今天 */
   /* 放在屏幕顶部（状态栏下面），离底部的"纪念日历"很远，不会点错；点按区域也加大了 */
-  .preview-tag{position:fixed;z-index:3;left:50%;transform:translateX(-50%);top:calc(var(--safe-t) + 6px);
+  .preview-tag{position:absolute;z-index:3;left:50%;transform:translateX(-50%);top:calc(var(--safe-t) + 6px);
     display:none;padding:16px 36px;
     font-size:12px;letter-spacing:.3em;color:var(--soft);font-family:"Noto Serif SC",serif;white-space:nowrap;cursor:pointer}
   .preview-tag:active{opacity:.5}
@@ -205,16 +206,16 @@
 
   /* ---------- 纪念日历 ---------- */
   /* 里程碑这一行固定在屏幕下方（底部横条上面），和中间的主体内容分开 */
-  .next{position:fixed;z-index:2;left:0;right:0;margin:0 auto;bottom:calc(var(--safe-b) + 26px);
+  .next{position:absolute;z-index:2;left:0;right:0;margin:0 auto;bottom:calc(var(--safe-b) + 26px);
     width:max-content;max-width:100%;padding:12px 24px 6px;text-align:center;cursor:pointer}
   body.loaded .next{animation:none}   /* 开场动画结束后交给下面的过渡效果 */
   .cal-hint{margin-top:10px;font-size:10px;letter-spacing:.35em;color:var(--soft);opacity:.75}
   .cal-hint::after{content:" ›";letter-spacing:0}
   /* 弹出：用 iOS 原生面板同款的减速曲线；遮罩只做淡入（不做模糊，避免卡顿） */
-  .sheet-mask{position:fixed;inset:0;z-index:9;background:rgba(10,8,6,.42);
+  .sheet-mask{position:absolute;inset:0;z-index:9;background:rgba(10,8,6,.42);
     opacity:0;pointer-events:none;transition:opacity .5s cubic-bezier(.32,.72,0,1)}
   .sheet{
-    position:fixed;z-index:10;left:0;right:0;bottom:0;max-height:76%;
+    position:absolute;z-index:10;left:0;right:0;bottom:0;max-height:76%;
     display:flex;flex-direction:column;background:var(--bg);color:var(--ink);
     border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.22);
     padding:12px 20px calc(env(safe-area-inset-bottom) + 12px);
@@ -636,6 +637,21 @@
   setTimeout(() => document.body.classList.add("loaded"), 3500);
   placeContent();
   addEventListener("resize", placeContent);
+
+  // ---------- 修正 iOS 主屏幕模式下页面偶尔变矮的问题 ----------
+  // 从主屏幕打开时，iOS 有时会把可视高度少算一截（大约一个状态栏的高度），
+  // 导致整页内容和底部那一行一起往上跑。主屏幕模式下页面本来就该铺满整块屏幕，
+  // 所以竖屏时直接用屏幕的真实高度；每次回到前台、尺寸变化时都重新量一次。
+  function fixViewport(){
+    const standalone = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+    const portrait = innerHeight >= innerWidth;
+    const h = standalone && portrait ? Math.max(innerHeight, screen.height) : innerHeight;
+    document.documentElement.style.setProperty("--app-h", h + "px");
+    resize(); placeContent();
+  }
+  fixViewport();
+  ["resize", "orientationchange", "pageshow"].forEach(e => addEventListener(e, () => setTimeout(fixViewport, 50)));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(fixViewport, 50); });
   if (document.fonts) document.fonts.ready.then(placeContent);   // 字体加载完高度会变，再定位一次
 
   // 禁止双指缩放和双击放大（iOS Safari 会忽略 user-scalable=no）；纪念日历的列表仍然可以上下滑
